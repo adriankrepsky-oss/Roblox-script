@@ -1,0 +1,103 @@
+-- =========================================
+--  BRAINROT PANEL (EXECUTOR LOADSTRING)
+-- =========================================
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+pcall(function()
+	PlayerGui:FindFirstChild("BrainrotUI"):Destroy()
+end)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainrotUI"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
+
+local logo = Instance.new("TextButton")
+logo.Size = UDim2.new(0,60,0,60)
+logo.Position = UDim2.new(0,10,0.5,-30)
+logo.Text = "🧠"
+logo.TextScaled = true
+logo.BackgroundColor3 = Color3.fromRGB(30,30,30)
+logo.TextColor3 = Color3.new(1,1,1)
+logo.Parent = gui
+
+local panel = Instance.new("Frame")
+panel.Size = UDim2.new(0,260,1,0)
+panel.Position = UDim2.new(0,-260,0,0)
+panel.BackgroundColor3 = Color3.fromRGB(20,20,20)
+panel.Parent = gui
+
+local open = false
+logo.MouseButton1Click:Connect(function()
+	open = not open
+	TweenService:Create(
+		panel,
+		TweenInfo.new(0.25),
+		{Position = open and UDim2.new(0,0,0,0) or UDim2.new(0,-260,0,0)}
+	):Play()
+end)
+
+local layout = Instance.new("UIListLayout", panel)
+layout.Padding = UDim.new(0,6)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,40)
+title.Text = "BRAINROT PANEL"
+title.TextScaled = true
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundTransparency = 1
+title.Parent = panel
+
+local currentPreview
+local function spawnPreview(name)
+	if currentPreview then currentPreview:Destroy() end
+	local model = workspace:FindFirstChild(name)
+	if not model then return end
+	currentPreview = model:Clone()
+	currentPreview.Parent = workspace
+	currentPreview:PivotTo(
+		LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-10)
+	)
+end
+
+local function button(text, callback)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1,-12,0,34)
+	b.Text = "  "..text
+	b.TextXAlignment = Enum.TextXAlignment.Left
+	b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.Parent = panel
+	b.MouseButton1Click:Connect(callback)
+end
+
+-- CHANGE THESE NAMES
+button("Brainrot 1", function() spawnPreview("Brainrot1") end)
+button("Brainrot 2", function() spawnPreview("Brainrot2") end)
+
+local sep = Instance.new("TextLabel")
+sep.Size = UDim2.new(1,0,0,30)
+sep.Text = "ANIMATIONS"
+sep.TextScaled = true
+sep.TextColor3 = Color3.fromRGB(200,200,200)
+sep.BackgroundTransparency = 1
+sep.Parent = panel
+
+local function playAnim(id)
+	if not currentPreview then return end
+	local hum = currentPreview:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	local animator = hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum)
+	for _,t in pairs(animator:GetPlayingAnimationTracks()) do t:Stop() end
+	local anim = Instance.new("Animation")
+	anim.AnimationId = id
+	animator:LoadAnimation(anim):Play()
+end
+
+button("Idle",  function() playAnim("rbxassetid://ID") end)
+button("Walk",  function() playAnim("rbxassetid://ID") end)
+button("Emote", function() playAnim("rbxassetid://ID") end)
