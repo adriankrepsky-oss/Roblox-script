@@ -1,0 +1,7 @@
+local count = 0
+for _,v in pairs(game:GetDescendants()) do
+	if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") then
+		count += 1
+	end
+end
+print("Brainrots found:", count)
