@@ -1,0 +1,139 @@
+-- =========================================
+--  BRAINROT AUTO SPAWNER (EXECUTOR)
+-- =========================================
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+
+local lp = Players.LocalPlayer
+local guiParent = lp:WaitForChild("PlayerGui")
+
+-- remove old ui
+pcall(function()
+	guiParent:FindFirstChild("BrainrotUI"):Destroy()
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainrotUI"
+gui.ResetOnSpawn = false
+gui.Parent = guiParent
+
+-- LOGO (round, green)
+local logo = Instance.new("TextButton")
+logo.Size = UDim2.new(0,60,0,60)
+logo.Position = UDim2.new(0,15,0.5,-30)
+logo.Text = "🧠"
+logo.TextScaled = true
+logo.BackgroundColor3 = Color3.fromRGB(0,180,80)
+logo.TextColor3 = Color3.new(1,1,1)
+logo.Parent = gui
+Instance.new("UICorner", logo).CornerRadius = UDim.new(1,0)
+
+-- PANEL
+local panel = Instance.new("Frame")
+panel.Size = UDim2.new(0,300,0,400)
+panel.Position = UDim2.new(0,-320,0.5,-200)
+panel.BackgroundColor3 = Color3.fromRGB(25,25,25)
+panel.Parent = gui
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0,18)
+
+-- drag panel
+do
+	local dragging, dragStart, startPos
+	panel.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = i.Position
+			startPos = panel.Position
+		end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+			local delta = i.Position - dragStart
+			panel.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+-- toggle
+local open = false
+logo.MouseButton1Click:Connect(function()
+	open = not open
+	TweenService:Create(panel, TweenInfo.new(0.25), {
+		Position = open and UDim2.new(0,90,0.5,-200) or UDim2.new(0,-320,0.5,-200)
+	}):Play()
+end)
+
+-- TITLE
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,40)
+title.Text = "BRAINROT SPAWNER"
+title.TextScaled = true
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundTransparency = 1
+title.Parent = panel
+
+-- SCROLL LIST
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(1,-20,1,-60)
+list.Position = UDim2.new(0,10,0,50)
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.ScrollBarImageTransparency = 0.3
+list.BackgroundTransparency = 1
+list.Parent = panel
+
+local layout = Instance.new("UIListLayout", list)
+layout.Padding = UDim.new(0,6)
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	list.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10)
+end)
+
+-- FIND ALL BRAINROTS
+local brainrots = {}
+
+for _,v in pairs(game:GetDescendants()) do
+	if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") then
+		brainrots[v.Name] = v
+	end
+end
+
+-- SPAWN LOGIC
+local current
+local function spawnBrainrot(model)
+	if current then current:Destroy() end
+	current = model:Clone()
+	current.Parent = workspace
+
+	if current.PrimaryPart then
+		current:SetPrimaryPartCFrame(
+			lp.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-12)
+		)
+	end
+end
+
+-- CREATE BUTTONS
+for name,model in pairs(brainrots) do
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1,-10,0,34)
+	btn.Text = "  "..name
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+	btn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Parent = list
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+
+	btn.MouseButton1Click:Connect(function()
+		spawnBrainrot(model)
+	end)
+end
