@@ -1,0 +1,73 @@
+--========================================
+-- SERVER-SAFE MOVE (NO SNAP BACK)
+--========================================
+
+if getgenv().SafeMoveLoaded then return end
+getgenv().SafeMoveLoaded = true
+
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local lp = Players.LocalPlayer
+
+local savedPos = nil
+
+-- SET POSITION (Z)
+local function setPosition()
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {char}
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local ray = workspace:Raycast(hrp.Position, Vector3.new(0, -60, 0), params)
+    if ray then
+        savedPos = ray.Position
+        print("✅ Position saved")
+    end
+end
+
+-- MOVE LIKE A PLAYER (X)
+local function moveToPosition()
+    if not savedPos then return end
+
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid")
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    hum.PlatformStand = false
+    hum:ChangeState(Enum.HumanoidStateType.Running)
+
+    -- Pathfind so server accepts movement
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true
+    })
+
+    path:ComputeAsync(hrp.Position, savedPos)
+
+    if path.Status ~= Enum.PathStatus.Success then
+        warn("Path failed")
+        return
+    end
+
+    for _, waypoint in ipairs(path:GetWaypoints()) do
+        hum:MoveTo(waypoint.Position)
+        hum.MoveToFinished:Wait()
+    end
+
+    print("✅ Arrived (no snap back)")
+end
+
+-- HOTKEYS
+game:GetService("UserInputService").InputBegan:Connect(function(i, g)
+    if g then return end
+    if i.KeyCode == Enum.KeyCode.Z then
+        setPosition()
+    elseif i.KeyCode == Enum.KeyCode.X then
+        moveToPosition()
+    end
+end)
+
+print("🟢 Server-safe movement loaded (Z=set, X=go)")
