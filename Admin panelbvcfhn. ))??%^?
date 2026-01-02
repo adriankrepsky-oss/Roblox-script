@@ -1,0 +1,162 @@
+-- ======================================================
+-- ONE-SCRIPT ADMIN SYSTEM (AUTO UI + FUTURISTIC LOGO)
+-- ======================================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ================= REMOTE =================
+local remotes = ReplicatedStorage:FindFirstChild("AdminRemotes")
+if not remotes then
+	remotes = Instance.new("Folder")
+	remotes.Name = "AdminRemotes"
+	remotes.Parent = ReplicatedStorage
+end
+
+local adminEvent = remotes:FindFirstChild("AdminCommand")
+if not adminEvent then
+	adminEvent = Instance.new("RemoteEvent")
+	adminEvent.Name = "AdminCommand"
+	adminEvent.Parent = remotes
+end
+
+-- ================= CONFIG =================
+local OWNER_IDS = {
+	-- PUT YOUR USER ID HERE
+	-- Example: 123456789
+}
+
+local function isOwner(player)
+	for _, id in ipairs(OWNER_IDS) do
+		if player.UserId == id then
+			return true
+		end
+	end
+	return false
+end
+
+-- ================= COMMANDS =================
+adminEvent.OnServerEvent:Connect(function(player, text)
+	if not isOwner(player) then
+		adminEvent:FireClient(player, false, "Not owner")
+		return
+	end
+
+	local args = string.split(text, " ")
+	local cmd = args[1]:lower()
+
+	if cmd == "kick" then
+		local name = args[2]
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p.Name:lower():sub(1, #name) == name then
+				p:Kick("Kicked by owner")
+				adminEvent:FireClient(player, true, "Kicked " .. p.Name)
+				return
+			end
+		end
+		adminEvent:FireClient(player, false, "Player not found")
+
+	elseif cmd == "ws" then
+		local name, speed = args[2], tonumber(args[3])
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p.Name:lower():sub(1, #name) == name then
+				local h = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+				if h then h.WalkSpeed = speed end
+				adminEvent:FireClient(player, true, "WalkSpeed set")
+				return
+			end
+		end
+
+	else
+		adminEvent:FireClient(player, false, "Commands: kick <name>, ws <name> <speed>")
+	end
+end)
+
+-- ================= UI INJECTION =================
+Players.PlayerAdded:Connect(function(player)
+	if not isOwner(player) then return end
+
+	player.CharacterAdded:Wait()
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "AdminPanel"
+	gui.ResetOnSpawn = false
+	gui.Parent = player:WaitForChild("PlayerGui")
+
+	-- LOGO
+	local logo = Instance.new("TextButton")
+	logo.Size = UDim2.fromScale(0.07, 0.12)
+	logo.Position = UDim2.fromScale(0.93, 0.5)
+	logo.AnchorPoint = Vector2.new(0.5, 0.5)
+	logo.Text = "⟁"
+	logo.TextScaled = true
+	logo.Font = Enum.Font.GothamBold
+	logo.TextColor3 = Color3.fromRGB(0, 200, 255)
+	logo.BackgroundColor3 = Color3.fromRGB(10, 20, 40)
+	logo.Parent = gui
+
+	local corner = Instance.new("UICorner", logo)
+	corner.CornerRadius = UDim.new(0.4, 0)
+
+	-- PANEL
+	local panel = Instance.new("Frame")
+	panel.Size = UDim2.fromScale(0.35, 0.25)
+	panel.Position = UDim2.fromScale(0.5, 0.5)
+	panel.AnchorPoint = Vector2.new(0.5, 0.5)
+	panel.BackgroundColor3 = Color3.fromRGB(12, 22, 45)
+	panel.Visible = false
+	panel.Parent = gui
+
+	Instance.new("UICorner", panel)
+
+	local box = Instance.new("TextBox")
+	box.Size = UDim2.fromScale(0.9, 0.3)
+	box.Position = UDim2.fromScale(0.05, 0.2)
+	box.PlaceholderText = "kick name | ws name speed"
+	box.TextScaled = true
+	box.Font = Enum.Font.Gotham
+	box.Parent = panel
+
+	local run = Instance.new("TextButton")
+	run.Size = UDim2.fromScale(0.5, 0.25)
+	run.Position = UDim2.fromScale(0.25, 0.6)
+	run.Text = "EXECUTE"
+	run.TextScaled = true
+	run.Font = Enum.Font.GothamBold
+	run.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
+	run.Parent = panel
+
+	-- CLIENT LOGIC
+	local client = Instance.new("LocalScript")
+	client.Source = [[
+		local UIS = game:GetService("UserInputService")
+		local RS = game:GetService("ReplicatedStorage")
+		local remote = RS.AdminRemotes.AdminCommand
+
+		local gui = script.Parent
+		local logo = gui:WaitForChild("TextButton")
+		local panel = gui:WaitForChild("Frame")
+		local box = panel:FindFirstChildOfClass("TextBox")
+		local run = panel:FindFirstChildOfClass("TextButton")
+
+		logo.MouseButton1Click:Connect(function()
+			panel.Visible = not panel.Visible
+			logo.Visible = not panel.Visible
+		end)
+
+		run.MouseButton1Click:Connect(function()
+			if box.Text ~= "" then
+				remote:FireServer(box.Text)
+			end
+		end)
+
+		UIS.InputBegan:Connect(function(i, gpe)
+			if gpe then return end
+			if i.KeyCode == Enum.KeyCode.Escape then
+				panel.Visible = false
+				logo.Visible = true
+			end
+		end)
+	]]
+	client.Parent = gui
+end)
