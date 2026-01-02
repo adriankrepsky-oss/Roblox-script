@@ -1,0 +1,125 @@
+--// EXECUTOR FULL SCRIPT (DELTA SAFE)
+
+if getgenv().AdminUI_Loaded then return end
+getgenv().AdminUI_Loaded = true
+
+-- Wait for game to fully load
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Clean old UI if exists
+pcall(function()
+    CoreGui.AdminExecutorUI:Destroy()
+end)
+
+-- ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "AdminExecutorUI"
+gui.ResetOnSpawn = false
+gui.Parent = CoreGui
+
+-- LOGO BUTTON
+local logo = Instance.new("ImageButton")
+logo.Name = "LogoButton"
+logo.Size = UDim2.fromOffset(70, 70)
+logo.Position = UDim2.fromScale(0.02, 0.4)
+logo.BackgroundColor3 = Color3.fromRGB(10, 30, 60)
+logo.BorderSizePixel = 0
+logo.Image = "rbxassetid://13486708564" -- futuristic placeholder
+logo.Parent = gui
+
+local logoCorner = Instance.new("UICorner", logo)
+logoCorner.CornerRadius = UDim.new(1, 0)
+
+-- Glow
+local stroke = Instance.new("UIStroke", logo)
+stroke.Color = Color3.fromRGB(0, 170, 255)
+stroke.Thickness = 2
+
+-- ADMIN PANEL FRAME
+local panel = Instance.new("Frame")
+panel.Size = UDim2.fromOffset(300, 360)
+panel.Position = UDim2.fromScale(0.08, 0.3)
+panel.BackgroundColor3 = Color3.fromRGB(15, 20, 35)
+panel.Visible = false
+panel.Parent = gui
+
+local panelCorner = Instance.new("UICorner", panel)
+panelCorner.CornerRadius = UDim.new(0, 16)
+
+local panelStroke = Instance.new("UIStroke", panel)
+panelStroke.Color = Color3.fromRGB(0, 140, 255)
+panelStroke.Thickness = 2
+
+-- TITLE
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "ADMIN PANEL"
+title.TextColor3 = Color3.fromRGB(0, 200, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.Parent = panel
+
+-- BUTTON CONTAINER
+local list = Instance.new("UIListLayout")
+list.Padding = UDim.new(0, 10)
+
+local container = Instance.new("Frame")
+container.Position = UDim2.fromOffset(20, 70)
+container.Size = UDim2.new(1, -40, 1, -90)
+container.BackgroundTransparency = 1
+container.Parent = panel
+list.Parent = container
+
+-- FUNCTION TO CREATE ADMIN BUTTON
+local function createButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 35, 60)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.Parent = container
+
+    local c = Instance.new("UICorner", btn)
+    c.CornerRadius = UDim.new(0, 10)
+
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- SAB-STYLE ADMIN ACTIONS (PLACEHOLDERS)
+createButton("Fly", function()
+    print("Fly clicked")
+end)
+
+createButton("God Mode", function()
+    print("God Mode clicked")
+end)
+
+createButton("Speed", function()
+    print("Speed clicked")
+end)
+
+createButton("Jump Power", function()
+    print("Jump Power clicked")
+end)
+
+createButton("Kill All", function()
+    print("Kill All clicked")
+end)
+
+-- TOGGLE LOGIC
+local open = false
+logo.MouseButton1Click:Connect(function()
+    open = not open
+    panel.Visible = open
+end)
+
+print("✅ Admin Executor UI Loaded Successfully")
