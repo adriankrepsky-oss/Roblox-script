@@ -1,0 +1,197 @@
+--====================================================
+-- DELTA ONE-FILE SECRET TELEPORT (NO SNAP BACK)
+--====================================================
+
+if getgenv().TeleportFixLoaded then return end
+getgenv().TeleportFixLoaded = true
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+local lp = Players.LocalPlayer
+local PASSWORD = "Stranger Things Is The Best"
+getgenv().SecretUnlocked = getgenv().SecretUnlocked or false
+
+pcall(function()
+    CoreGui.TeleportFixUI:Destroy()
+end)
+
+--========================
+-- GUI
+--========================
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "TeleportFixUI"
+gui.ResetOnSpawn = false
+
+--========================
+-- DRAG HELPER
+--========================
+local function makeDraggable(frame)
+    local dragging, dragStart, startPos
+    frame.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = i.Position
+            startPos = frame.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = i.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    UIS.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+--========================
+-- LOGO
+--========================
+local logo = Instance.new("TextButton", gui)
+logo.Size = UDim2.fromOffset(70,70)
+logo.Position = UDim2.fromScale(0.02,0.45)
+logo.Text = "⚡"
+logo.Font = Enum.Font.GothamBold
+logo.TextSize = 28
+logo.TextColor3 = Color3.new(1,1,1)
+logo.BackgroundColor3 = Color3.fromRGB(0,140,255)
+logo.BorderSizePixel = 0
+Instance.new("UICorner", logo).CornerRadius = UDim.new(1,0)
+makeDraggable(logo)
+
+--========================
+-- PANEL
+--========================
+local panel = Instance.new("Frame", gui)
+panel.Size = UDim2.fromOffset(320,260)
+panel.Position = UDim2.fromScale(0.12,0.35)
+panel.BackgroundColor3 = Color3.fromRGB(18,22,35)
+panel.Visible = false
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0,14)
+makeDraggable(panel)
+
+local title = Instance.new("TextLabel", panel)
+title.Size = UDim2.new(1,0,0,50)
+title.BackgroundTransparency = 1
+title.Text = "SECRET TELEPORT"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.fromRGB(0,200,255)
+
+local container = Instance.new("Frame", panel)
+container.Position = UDim2.fromOffset(20,60)
+container.Size = UDim2.new(1,-40,1,-80)
+container.BackgroundTransparency = 1
+
+local layout = Instance.new("UIListLayout", container)
+layout.Padding = UDim.new(0,12)
+
+local function button(text)
+    local b = Instance.new("TextButton", container)
+    b.Size = UDim2.new(1,0,0,45)
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = Color3.fromRGB(0,140,255)
+    b.BorderSizePixel = 0
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+    return b
+end
+
+--========================
+-- MARKER
+--========================
+local marker, markerPos
+
+local setBtn = button("Set this location")
+local tpBtn = button("Teleport")
+
+setBtn.MouseButton1Click:Connect(function()
+    if marker then marker:Destroy() end
+    local char = lp.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    markerPos = hrp.Position - Vector3.new(0,3,0)
+
+    marker = Instance.new("Part", workspace)
+    marker.Anchored = true
+    marker.CanCollide = false
+    marker.Size = Vector3.new(6,1,6)
+    marker.Material = Enum.Material.Neon
+    marker.Color = Color3.fromRGB(0,170,255)
+    marker.Position = markerPos
+end)
+
+--========================
+-- 🔥 REAL TELEPORT FIX
+--========================
+tpBtn.MouseButton1Click:Connect(function()
+    if not markerPos then return end
+
+    local char = lp.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+
+    -- HARD STOP PHYSICS
+    hrp.Anchored = true
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+
+    -- TELEPORT
+    hrp.CFrame = CFrame.new(markerPos + Vector3.new(0,3,0))
+
+    -- WAIT 1 FRAME
+    RunService.RenderStepped:Wait()
+
+    -- RELEASE
+    hrp.Anchored = false
+    hum:ChangeState(Enum.HumanoidStateType.Running)
+end)
+
+--========================
+-- PASSWORD
+--========================
+local function promptPassword()
+    local box = Instance.new("TextBox", gui)
+    box.Size = UDim2.fromOffset(300,45)
+    box.Position = UDim2.fromScale(0.5,0.5)
+    box.AnchorPoint = Vector2.new(0.5,0.5)
+    box.PlaceholderText = "Enter password"
+    box.ClearTextOnFocus = false
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 14
+    box.TextColor3 = Color3.new(1,1,1)
+    box.BackgroundColor3 = Color3.fromRGB(25,30,45)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,10)
+
+    box.FocusLost:Wait()
+    if box.Text == PASSWORD then
+        getgenv().SecretUnlocked = true
+        panel.Visible = true
+    end
+    box:Destroy()
+end
+
+logo.MouseButton1Click:Connect(function()
+    if not getgenv().SecretUnlocked then
+        promptPassword()
+    else
+        panel.Visible = not panel.Visible
+    end
+end)
+
+print("✅ Teleport FIXED — no snap back")
