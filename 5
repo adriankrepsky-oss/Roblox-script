@@ -1,0 +1,119 @@
+--========================================
+-- CLEAN TELEPORT WITH PASSWORD (NO RETURN)
+--========================================
+
+if getgenv().CleanTeleportPasswordLoaded then return end
+getgenv().CleanTeleportPasswordLoaded = true
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+local lp = Players.LocalPlayer
+local PASSWORD = "Stranger Things Is The Best"
+
+-- remember password (session only)
+getgenv().SecretUnlocked = getgenv().SecretUnlocked or false
+
+------------------------------------------------
+-- PASSWORD PROMPT
+------------------------------------------------
+local function promptPassword()
+    local gui = Instance.new("ScreenGui", CoreGui)
+    gui.Name = "PasswordPromptUI"
+
+    local box = Instance.new("TextBox", gui)
+    box.Size = UDim2.fromOffset(320,50)
+    box.Position = UDim2.fromScale(0.5,0.5)
+    box.AnchorPoint = Vector2.new(0.5,0.5)
+    box.PlaceholderText = "Enter password"
+    box.ClearTextOnFocus = false
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 16
+    box.TextColor3 = Color3.new(1,1,1)
+    box.BackgroundColor3 = Color3.fromRGB(25,30,45)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,12)
+
+    box.FocusLost:Wait()
+    if box.Text == PASSWORD then
+        getgenv().SecretUnlocked = true
+    end
+
+    gui:Destroy()
+end
+
+------------------------------------------------
+-- ASK PASSWORD ONCE
+------------------------------------------------
+if not getgenv().SecretUnlocked then
+    promptPassword()
+end
+
+if not getgenv().SecretUnlocked then
+    warn("❌ Wrong password")
+    return
+end
+
+------------------------------------------------
+-- TELEPORT LOGIC
+------------------------------------------------
+local savedPos = nil
+
+-- SET POSITION (Z)
+local function setPosition()
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {char}
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local ray = workspace:Raycast(
+        hrp.Position,
+        Vector3.new(0, -60, 0),
+        params
+    )
+
+    if ray then
+        savedPos = ray.Position
+        print("✅ Position saved")
+    end
+end
+
+-- TELEPORT (X)
+local function teleport()
+    if not savedPos then return end
+
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+
+    -- teleport NEAR the position (server-friendly)
+    hrp.CFrame = CFrame.new(savedPos + Vector3.new(0, 0, -3))
+
+    -- restore full control
+    hum:ChangeState(Enum.HumanoidStateType.Running)
+    hum.PlatformStand = false
+    hum.AutoRotate = true
+    hum.WalkSpeed = 16
+    hum.JumpPower = 50
+
+    print("✅ Teleported (no return)")
+end
+
+------------------------------------------------
+-- HOTKEYS
+------------------------------------------------
+UIS.InputBegan:Connect(function(i, g)
+    if g then return end
+    if i.KeyCode == Enum.KeyCode.Z then
+        setPosition()
+    elseif i.KeyCode == Enum.KeyCode.X then
+        teleport()
+    end
+end)
+
+print("🟢 Clean teleport with password loaded")
+print("Z = Set Position | X = Teleport")
