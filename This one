@@ -1,0 +1,212 @@
+--====================================================
+-- FULL SCRIPT: PASSWORD + 2 BUTTONS + RETURN (5s)
+--====================================================
+
+if getgenv().TwoButtonPasswordTeleportLoaded then return end
+getgenv().TwoButtonPasswordTeleportLoaded = true
+
+-- Wait for game
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+local lp = Players.LocalPlayer
+
+------------------------------------------------------
+-- CONFIG
+------------------------------------------------------
+
+local PASSWORD = "Stranger Things Is The Best"
+getgenv().SecretUnlocked = getgenv().SecretUnlocked or false
+
+-- 🔴 CHANGE THIS to the thing you want to teleport onto
+local TARGET_PART = workspace:WaitForChild("GreenPad") -- change name if needed
+
+local RETURN_TIME = 5 -- seconds
+
+------------------------------------------------------
+-- CLEAN OLD UI
+------------------------------------------------------
+pcall(function()
+    CoreGui.TwoButtonPasswordTeleportUI:Destroy()
+end)
+
+------------------------------------------------------
+-- GUI ROOT
+------------------------------------------------------
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "TwoButtonPasswordTeleportUI"
+gui.ResetOnSpawn = false
+
+------------------------------------------------------
+-- DRAG FUNCTION
+------------------------------------------------------
+local function makeDraggable(frame)
+    local dragging, dragStart, startPos
+    frame.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = i.Position
+            startPos = frame.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = i.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    UIS.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+------------------------------------------------------
+-- PANEL
+------------------------------------------------------
+local panel = Instance.new("Frame", gui)
+panel.Size = UDim2.fromOffset(300,200)
+panel.Position = UDim2.fromScale(0.4,0.4)
+panel.BackgroundColor3 = Color3.fromRGB(18,22,35)
+panel.Visible = false
+panel.Parent = gui
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0,14)
+makeDraggable(panel)
+
+local title = Instance.new("TextLabel", panel)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundTransparency = 1
+title.Text = "SECRET TELEPORT"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.fromRGB(0,200,255)
+
+------------------------------------------------------
+-- CONTENT
+------------------------------------------------------
+local container = Instance.new("Frame", panel)
+container.Position = UDim2.fromOffset(20,50)
+container.Size = UDim2.new(1,-40,1,-70)
+container.BackgroundTransparency = 1
+
+local layout = Instance.new("UIListLayout", container)
+layout.Padding = UDim.new(0,12)
+
+local function makeButton(text)
+    local b = Instance.new("TextButton", container)
+    b.Size = UDim2.new(1,0,0,45)
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = Color3.fromRGB(0,140,255)
+    b.BorderSizePixel = 0
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+    return b
+end
+
+------------------------------------------------------
+-- STATE
+------------------------------------------------------
+local originalCFrame = nil
+local returnTask = nil
+
+------------------------------------------------------
+-- BUTTONS
+------------------------------------------------------
+local tpBtn = makeButton("Teleport")
+local backBtn = makeButton("Back")
+
+------------------------------------------------------
+-- TELEPORT LOGIC
+------------------------------------------------------
+local function teleportToTarget()
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+
+    originalCFrame = hrp.CFrame
+
+    local targetPos =
+        TARGET_PART.Position
+        + Vector3.new(0, TARGET_PART.Size.Y / 2 + 3, 0)
+
+    hrp.CFrame = CFrame.new(targetPos)
+
+    hum:ChangeState(Enum.HumanoidStateType.Running)
+    hum.AutoRotate = true
+
+    -- Auto return after 5 seconds
+    if returnTask then
+        task.cancel(returnTask)
+    end
+
+    returnTask = task.spawn(function()
+        task.wait(RETURN_TIME)
+        if originalCFrame and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            lp.Character.HumanoidRootPart.CFrame = originalCFrame
+        end
+    end)
+end
+
+------------------------------------------------------
+-- MANUAL RETURN
+------------------------------------------------------
+local function returnBack()
+    if returnTask then
+        task.cancel(returnTask)
+        returnTask = nil
+    end
+
+    if originalCFrame and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        lp.Character.HumanoidRootPart.CFrame = originalCFrame
+    end
+end
+
+------------------------------------------------------
+-- PASSWORD PROMPT
+------------------------------------------------------
+local function promptPassword()
+    local box = Instance.new("TextBox", gui)
+    box.Size = UDim2.fromOffset(300,45)
+    box.Position = UDim2.fromScale(0.5,0.5)
+    box.AnchorPoint = Vector2.new(0.5,0.5)
+    box.PlaceholderText = "Enter password"
+    box.ClearTextOnFocus = false
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 14
+    box.TextColor3 = Color3.new(1,1,1)
+    box.BackgroundColor3 = Color3.fromRGB(25,30,45)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,10)
+
+    box.FocusLost:Wait()
+    if box.Text == PASSWORD then
+        getgenv().SecretUnlocked = true
+        panel.Visible = true
+    end
+    box:Destroy()
+end
+
+------------------------------------------------------
+-- SHOW PANEL (PASSWORD GATED)
+------------------------------------------------------
+if not getgenv().SecretUnlocked then
+    promptPassword()
+else
+    panel.Visible = true
+end
+
+------------------------------------------------------
+-- BUTTON CONNECTIONS
+------------------------------------------------------
+tpBtn.MouseButton1Click:Connect(teleportToTarget)
+backBtn.MouseButton1Click:Connect(returnBack)
+
+print("✅ Password + 2-button teleport script loaded")
