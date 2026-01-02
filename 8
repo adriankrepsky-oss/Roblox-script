@@ -1,0 +1,53 @@
+--========================================
+-- GUARANTEED PASSWORD PROMPT
+--========================================
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+
+local PASSWORD = "Stranger Things Is The Best"
+getgenv().SecretUnlocked = getgenv().SecretUnlocked or false
+
+-- remove old prompt if any
+pcall(function()
+    CoreGui.PasswordPromptUI:Destroy()
+end)
+
+if not getgenv().SecretUnlocked then
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "PasswordPromptUI"
+    gui.ResetOnSpawn = false
+    gui.Parent = CoreGui
+
+    local bg = Instance.new("Frame", gui)
+    bg.Size = UDim2.fromScale(1,1)
+    bg.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    bg.BackgroundTransparency = 0.4
+
+    local box = Instance.new("TextBox", bg)
+    box.Size = UDim2.fromOffset(360,50)
+    box.Position = UDim2.fromScale(0.5,0.5)
+    box.AnchorPoint = Vector2.new(0.5,0.5)
+    box.PlaceholderText = "Enter password"
+    box.ClearTextOnFocus = false
+    box.Font = Enum.Font.GothamBold
+    box.TextSize = 16
+    box.TextColor3 = Color3.new(1,1,1)
+    box.BackgroundColor3 = Color3.fromRGB(30,35,55)
+    box.BorderSizePixel = 0
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,12)
+
+    box.FocusLost:Connect(function(enterPressed)
+        if box.Text == PASSWORD then
+            getgenv().SecretUnlocked = true
+            gui:Destroy()
+            print("✅ Password accepted")
+        else
+            box.Text = ""
+            box.PlaceholderText = "Wrong password"
+        end
+    end)
+end
