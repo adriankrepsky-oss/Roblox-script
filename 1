@@ -1,0 +1,255 @@
+--====================================================
+-- FINAL SCRIPT: LOGO + PASSWORD + TELEPORT (NO RETURN)
+-- + 3D CHARACTER-SIZED RECTANGLE
+--====================================================
+
+if getgenv().FinalTeleportNoReturnLoaded then return end
+getgenv().FinalTeleportNoReturnLoaded = true
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+local lp = Players.LocalPlayer
+local PASSWORD = "Stranger Things Is The Best"
+
+-- password memory (session only)
+getgenv().SecretUnlocked = getgenv().SecretUnlocked or false
+
+------------------------------------------------------
+-- CLEAN OLD UI
+------------------------------------------------------
+pcall(function()
+    CoreGui.FinalTeleportUI:Destroy()
+end)
+
+------------------------------------------------------
+-- GUI ROOT
+------------------------------------------------------
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "FinalTeleportUI"
+gui.ResetOnSpawn = false
+
+------------------------------------------------------
+-- DRAG FUNCTION
+------------------------------------------------------
+local function makeDraggable(frame)
+    local dragging, dragStart, startPos
+    frame.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = i.Position
+            startPos = frame.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = i.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    UIS.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+------------------------------------------------------
+-- LOGO
+------------------------------------------------------
+local logo = Instance.new("TextButton", gui)
+logo.Size = UDim2.fromOffset(64,64)
+logo.Position = UDim2.fromScale(0.85,0.35)
+logo.Text = "⚡"
+logo.Font = Enum.Font.GothamBold
+logo.TextSize = 26
+logo.TextColor3 = Color3.new(1,1,1)
+logo.BackgroundColor3 = Color3.fromRGB(0,140,255)
+logo.BorderSizePixel = 0
+Instance.new("UICorner", logo).CornerRadius = UDim.new(1,0)
+makeDraggable(logo)
+
+------------------------------------------------------
+-- PANEL
+------------------------------------------------------
+local panel = Instance.new("Frame", gui)
+panel.Size = UDim2.fromOffset(260,170)
+panel.Position = UDim2.fromScale(0.55,0.35)
+panel.BackgroundColor3 = Color3.fromRGB(18,22,35)
+panel.Visible = false
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0,14)
+makeDraggable(panel)
+
+local title = Instance.new("TextLabel", panel)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundTransparency = 1
+title.Text = "SECRET PANEL"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextColor3 = Color3.fromRGB(0,200,255)
+
+------------------------------------------------------
+-- CONTENT
+------------------------------------------------------
+local container = Instance.new("Frame", panel)
+container.Position = UDim2.fromOffset(20,50)
+container.Size = UDim2.new(1,-40,1,-60)
+container.BackgroundTransparency = 1
+
+local layout = Instance.new("UIListLayout", container)
+layout.Padding = UDim.new(0,12)
+
+local function makeButton(text)
+    local b = Instance.new("TextButton", container)
+    b.Size = UDim2.new(1,0,0,45)
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = Color3.fromRGB(0,140,255)
+    b.BorderSizePixel = 0
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+    return b
+end
+
+------------------------------------------------------
+-- STATE
+------------------------------------------------------
+local savedHitPosition = nil
+
+------------------------------------------------------
+-- BUTTONS (ONLY 2)
+------------------------------------------------------
+local setBtn = makeButton("Set Position")
+local tpBtn = makeButton("Teleport")
+
+------------------------------------------------------
+-- SET POSITION (GROUND UNDER YOU)
+------------------------------------------------------
+setBtn.MouseButton1Click:Connect(function()
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {char}
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+
+    local result = workspace:Raycast(
+        hrp.Position,
+        Vector3.new(0, -20, 0),
+        params
+    )
+
+    if result then
+        savedHitPosition = result.Position
+    end
+end)
+
+------------------------------------------------------
+-- TELEPORT (FALL + STAY + MOVE FREELY)
+------------------------------------------------------
+tpBtn.MouseButton1Click:Connect(function()
+    if not savedHitPosition then return end
+
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+
+    -- Teleport ABOVE the spot so you FALL and TOUCH ground
+    hrp.CFrame = CFrame.new(savedHitPosition + Vector3.new(0, 14, 0))
+
+    hum:ChangeState(Enum.HumanoidStateType.Freefall)
+    hum.AutoRotate = true
+end)
+
+------------------------------------------------------
+-- PASSWORD PROMPT
+------------------------------------------------------
+local function promptPassword()
+    local box = Instance.new("TextBox", gui)
+    box.Size = UDim2.fromOffset(300,45)
+    box.Position = UDim2.fromScale(0.5,0.5)
+    box.AnchorPoint = Vector2.new(0.5,0.5)
+    box.PlaceholderText = "Enter password"
+    box.ClearTextOnFocus = false
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 14
+    box.TextColor3 = Color3.new(1,1,1)
+    box.BackgroundColor3 = Color3.fromRGB(25,30,45)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,10)
+
+    box.FocusLost:Wait()
+    if box.Text == PASSWORD then
+        getgenv().SecretUnlocked = true
+        panel.Visible = true
+    end
+    box:Destroy()
+end
+
+------------------------------------------------------
+-- LOGO CLICK
+------------------------------------------------------
+logo.MouseButton1Click:Connect(function()
+    if not getgenv().SecretUnlocked then
+        promptPassword()
+    else
+        panel.Visible = not panel.Visible
+    end
+end)
+
+------------------------------------------------------
+-- 3D CHARACTER-SIZED RECTANGLE
+------------------------------------------------------
+local boxPart, weld, hbConn
+
+local function createCharBox()
+    if boxPart then boxPart:Destroy() end
+    if weld then weld:Destroy() end
+    if hbConn then hbConn:Disconnect() end
+
+    local char = lp.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local cf, size = char:GetBoundingBox()
+
+    boxPart = Instance.new("Part")
+    boxPart.Anchored = false
+    boxPart.CanCollide = false
+    boxPart.Massless = true
+    boxPart.Material = Enum.Material.Neon
+    boxPart.Color = Color3.fromRGB(0,170,255)
+    boxPart.Transparency = 0.55
+    boxPart.Size = size
+    boxPart.CFrame = cf
+    boxPart.Parent = workspace
+
+    weld = Instance.new("WeldConstraint")
+    weld.Part0 = boxPart
+    weld.Part1 = hrp
+    weld.Parent = boxPart
+
+    hbConn = RunService.Heartbeat:Connect(function()
+        if lp.Character then
+            local _, newSize = lp.Character:GetBoundingBox()
+            boxPart.Size = newSize
+        end
+    end)
+end
+
+lp.CharacterAdded:Connect(function()
+    task.wait(0.2)
+    createCharBox()
+end)
+
+createCharBox()
+
+print("✅ Teleport now STAYS, movement free, rectangle active")
